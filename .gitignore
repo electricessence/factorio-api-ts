@@ -50,5 +50,5 @@ fabric.properties
 # Editor-based Rest Client
 .idea/httpRequests
 
-types
+types/*/**/*.d.ts
 node_modules

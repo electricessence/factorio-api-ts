@@ -501,13 +501,13 @@
         "name": "commands",
         "type": "dictionary string → LocalisedString",
         "mode": "[R]",
-        "doc": "The script registered comman"
+        "doc": "The script registered command"
       },
       "game_commands": {
         "name": "game_commands",
         "type": "dictionary string → LocalisedString",
         "mode": "[R]",
-        "doc": "The script registered comman"
+        "doc": "The script registered command"
       },
       "remove_command": {
         "name": "remove_command",
@@ -1561,7 +1561,7 @@
         "name": "amount",
         "type": "uint",
         "mode": "[RW]",
-        "doc": "Count of resource units containe    \n_Can only be used if this is ResourceEntity_"
+        "doc": "Count of resource units contained.    \n_Can only be used if this is ResourceEntity_"
       },
       "auto_trash_filters": {
         "name": "auto_trash_filters",
@@ -1578,7 +1578,7 @@
       "begin_crafting": {
         "name": "begin_crafting",
         "type": "function",
-        "doc": "Begins crafting the given count of the given recip    \n\n**Parameters**  \ncount :: [uint](http://lua-api.factorio.com/latest/Builtin-Types.html#uint): The count to craft.  \nrecipe :: [string](http://lua-api.factorio.com/latest/Builtin-Types.html#string) or [LuaRecipe](http://lua-api.factorio.com/latest/LuaRecipe.html): The recipe to craft.  \nsilent :: [boolean](http://lua-api.factorio.com/latest/Builtin-Types.html#boolean) (optional): If false and the recipe can't be crafted the requested number of times printing the failure is skipped.  \n\n**Return value**  \nThe count that was actually started crafting.",
+        "doc": "Begins crafting the given count of the given recipe.    \n\n**Parameters**  \ncount :: [uint](http://lua-api.factorio.com/latest/Builtin-Types.html#uint): The count to craft.  \nrecipe :: [string](http://lua-api.factorio.com/latest/Builtin-Types.html#string) or [LuaRecipe](http://lua-api.factorio.com/latest/LuaRecipe.html): The recipe to craft.  \nsilent :: [boolean](http://lua-api.factorio.com/latest/Builtin-Types.html#boolean) (optional): If false and the recipe can't be crafted the requested number of times printing the failure is skipped.  \n\n**Return value**  \nThe count that was actually started crafting.",
         "returns": "uint",
         "args": {
           "count": {

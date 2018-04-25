@@ -3,6 +3,7 @@ import DirectoryInfo from "./_utility/DirectoryInfo";
 import {JsonMap} from "typescript-dotnet-commonjs/JSON";
 import {DefinesNode} from "./DefinesNode";
 import {IMap} from "typescript-dotnet-commonjs/IMap";
+import {ClassesNode, ClassMember} from "./ClassesNode";
 
 async function generateDefineTypes(dir: DirectoryInfo, node: JsonMap | IMap<DefinesNode>) {
 	if (!dir.exists) await dir.create();
@@ -36,17 +37,66 @@ async function generateDefineTypes(dir: DirectoryInfo, node: JsonMap | IMap<Defi
 	}
 }
 
-export async function start() {
+async function generateClassesTypes(dir: DirectoryInfo, node: JsonMap | IMap<ClassesNode>) {
+	if (!dir.exists) await dir.create();
+	else dir.clear();
+
+	for (const m of Object.keys(node)) {
+		const n: ClassesNode = <any>node[m];
+		const children: IMap<ClassMember> = n.properties;
+
+		const members:string[] = [];
+
+		for(const c in children)
+		{
+			const {type, name, doc} = children[c];
+
+			if(doc) {
+				members.push(`/**`);
+				members.push(` ${doc.split('\n').join('\n\t ')}`);
+				members.push(` **/`)
+			}
+
+			switch (type)
+			{
+				case 'function':
+
+					members.push(`${name}();`);
+					members.push(``);
+					break;
+
+				default:
+					members.push(`${name}: ${type};`);
+					break;
+			}
+		}
+
+		const template = [
+			`declare class ${m}`,
+			`{`,
+			"\t"+members.join('\n\t'),
+			`}`,
+			``,
+			`export default ${m};`
+		];
+
+		if(n.doc) template.unshift(`/** ${n.doc} **/`);
+
+		await dir
+			.file(`${m}.d.ts`)
+			.write(template.join('\n'));
+	}
+}
+
+export async function run() {
 
 	const typesDir = new DirectoryInfo("./types");
-	const definesDir = typesDir.directory("defines");
-	if (definesDir.exists) await definesDir.remove(true);
 
-	if (typesDir.exists) await typesDir.clear();
-	else await typesDir.create();
+	await generateDefineTypes(
+		typesDir.directory("defines"),
+		await json.read<JsonMap>("./definition/defines.json"));
 
-	const defines = await json.read<JsonMap>("./definition/defines.json");
-
-	await generateDefineTypes(definesDir, defines);
-
+	await generateClassesTypes(
+		typesDir.directory("classes"),
+		await json.read<JsonMap>("./definition/classes.json"));
 }
