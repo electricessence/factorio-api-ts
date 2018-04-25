@@ -3,6 +3,7 @@ import * as path from "path";
 import FileInfo from "./FileInfo";
 import {ENCODING} from "./file-promise";
 import {getFilesAsync} from "./getFiles";
+import {getDirectoriesAsync} from "./getDirectories";
 
 export default class DirectoryInfo
 {
@@ -33,6 +34,9 @@ export default class DirectoryInfo
 
 	async clear():Promise<void>
 	{
+		for(const dir of await this.directories())
+			await this.directory(dir).remove(true);
+
 		for(const file of await this.files())
 			await this.file(file).delete();
 	}
@@ -54,6 +58,11 @@ export default class DirectoryInfo
 	files(ext?:string):Promise<string[]>
 	{
 		return getFilesAsync(this.path, ext);
+	}
+
+	directories():Promise<string[]>
+	{
+		return getDirectoriesAsync(this.path);
 	}
 
 	file(fileName:string, encoding:string = ENCODING.UTF8):FileInfo

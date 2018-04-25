@@ -4,7 +4,7 @@ import {JsonMap} from "typescript-dotnet-commonjs/JSON";
 import {DefinesNode} from "./DefinesNode";
 import {IMap} from "typescript-dotnet-commonjs/IMap";
 
-async function generateTypes(dir: DirectoryInfo, node: JsonMap|DefinesNode) {
+async function generateDefineTypes(dir: DirectoryInfo, node: JsonMap | IMap<DefinesNode>) {
 	if (!dir.exists) await dir.create();
 	else dir.clear();
 
@@ -13,14 +13,16 @@ async function generateTypes(dir: DirectoryInfo, node: JsonMap|DefinesNode) {
 		const children: IMap<DefinesNode> = n.properties;
 		const e = Object.keys(children)
 			.filter(k => children[k].name);
+
 		if (e.length == 0) {
-			await generateTypes(dir.directory(m),n);
+			await generateDefineTypes(dir.directory(m), n.properties);
 		}
+
 		else {
 			const template = [
 				`declare enum ${m}`,
 				`{`,
-				Object.keys(e).map(k => `	${k},`).join('\n'),
+				e.map(k => `	${k},`).join('\n'),
 				`}`,
 				``,
 				`export default ${m};`
@@ -31,12 +33,11 @@ async function generateTypes(dir: DirectoryInfo, node: JsonMap|DefinesNode) {
 				.write(template.join('\n'));
 
 		}
-
-
 	}
 }
 
 export async function start() {
+
 	const typesDir = new DirectoryInfo("./types");
 	const definesDir = typesDir.directory("defines");
 	if (definesDir.exists) await definesDir.remove(true);
@@ -46,6 +47,6 @@ export async function start() {
 
 	const defines = await json.read<JsonMap>("./definition/defines.json");
 
-	await generateTypes(definesDir, defines);
+	await generateDefineTypes(definesDir, defines);
 
 }
