@@ -1,0 +1,12 @@
+{
+  "name": "factorio-api-ts",
+  "version": "0.0.1",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^9.6.6",
+    "stream-to-promise-agnostic": "^1.1.1",
+    "ts-node": "^6.0.0",
+    "typescript": "^2.8.3",
+    "typescript-dotnet-commonjs": "^4.10.0"
+  }
+}
