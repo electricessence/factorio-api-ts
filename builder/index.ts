@@ -4,10 +4,57 @@ import {JsonMap} from "typescript-dotnet-commonjs/JSON";
 import {DefinesNode} from "./DefinesNode";
 import {IMap} from "typescript-dotnet-commonjs/IMap";
 import {ClassesNode, ClassMember} from "./ClassesNode";
+import {repeat} from "typescript-dotnet-commonjs/System/Text/Utility";
 
-async function generateDefineTypes(dir: DirectoryInfo, node: JsonMap | IMap<DefinesNode>) {
-	if (!dir.exists) await dir.create();
-	else dir.clear();
+abstract class DefinesEntityBase {
+	constructor(public name: string) {
+	}
+
+	abstract toTypeScript(indent?: number): string;
+}
+
+class DefinesEnum extends DefinesEntityBase {
+	constructor(name: string, public values: string[]) {
+		super(name);
+	}
+
+	toTypeScript(indent: number = 0): string {
+		const i = repeat('\t', indent);
+		return i + `export enum ${this.name}\n`
+			+ i + `{\n`
+			+ this.values.map(k => i + `\t${k}`).join(',\n') + '\n'
+			+ i + `}`;
+	}
+}
+
+class DefinesNamespace extends DefinesEntityBase {
+	constructor(name: string) {
+		super(name);
+	}
+
+	namespaces: DefinesNamespace[] = [];
+	enums: DefinesEnum[] = [];
+
+	toTypeScript(indent: number = 0): string {
+		const i = repeat('\t', indent);
+		let result = i + `export namespace ${this.name}\n`
+			+ i + `{\n`;
+
+		if (this.namespaces.length)
+			result += this.namespaces
+				.map(n => n.toTypeScript(indent + 1)).join('\n\n') + '\n';
+		if (this.enums.length)
+			result += this.enums
+				.map(n => n.toTypeScript(indent + 1)).join('\n\n') + '\n';
+
+		result += i + `}\n`;
+		return result;
+	}
+}
+
+function generateDefineTypes(name: string, node: JsonMap | IMap<DefinesNode>): DefinesNamespace {
+
+	const ns = new DefinesNamespace(name);
 
 	for (const m of Object.keys(node)) {
 		const n: DefinesNode = <any>node[m];
@@ -15,26 +62,18 @@ async function generateDefineTypes(dir: DirectoryInfo, node: JsonMap | IMap<Defi
 		const e = Object.keys(children)
 			.filter(k => children[k].name);
 
+
 		if (e.length == 0) {
-			await generateDefineTypes(dir.directory(m), n.properties);
+			ns.namespaces.push(generateDefineTypes(m, n.properties));
 		}
 
 		else {
-			const template = [
-				`declare enum ${m}`,
-				`{`,
-				e.map(k => `	${k},`).join('\n'),
-				`}`,
-				``,
-				`export default ${m};`
-			];
-
-			await dir
-				.file(`${m}.d.ts`)
-				.write(template.join('\n'));
-
+			ns.enums.push(new DefinesEnum(m, e));
 		}
+
 	}
+	return ns;
+
 }
 
 async function generateClassesTypes(dir: DirectoryInfo, node: JsonMap | IMap<ClassesNode>) {
@@ -45,42 +84,82 @@ async function generateClassesTypes(dir: DirectoryInfo, node: JsonMap | IMap<Cla
 		const n: ClassesNode = <any>node[m];
 		const children: IMap<ClassMember> = n.properties;
 
-		const members:string[] = [];
+		const members: string[] = [];
+		const template: string[] = [];
 
-		for(const c in children)
-		{
-			const {type, name, doc} = children[c];
+		for (const c in children) {
+			let {type, name, doc} = children[c];
 
-			if(doc) {
+			if (doc) {
 				members.push(`/**`);
 				members.push(` ${doc.split('\n').join('\n\t ')}`);
 				members.push(` **/`)
 			}
 
-			switch (type)
-			{
-				case 'function':
+			if (!type) continue;
 
-					members.push(`${name}();`);
-					members.push(``);
-					break;
 
-				default:
-					members.push(`${name}: ${type};`);
-					break;
+			if (type == 'function') {
+				members.push(`${name}();`);
+				members.push(``);
+			}
+			else {
+
+				const types = type.split(" or ");
+				for (let i = 0; i < types.length; i++) {
+					let t = types[i];
+					const isDictionary = t.indexOf("dictionary ") == 0;
+					let key:string;
+					if (isDictionary) {
+						const arrow = t.indexOf('→');
+						key = t.substring(11, arrow-1);
+						t = t.substring(arrow + 2);
+					}
+
+					const isArray = t.indexOf("array of ") == 0;
+					if (isArray) {
+						t = t.substring(9);
+					}
+
+					switch (t) {
+						case 'float':
+						case 'double':
+						case 'int':
+						case 'uint':
+							t = `/* ${t} */ number`;
+							break;
+					}
+
+					if (t.indexOf('defines.') == 0) {
+						const imp = `import {defines} from '../defines';`;
+						if (template.indexOf(imp) == -1) template.push(imp)
+					}
+
+					if (t!=m && t.indexOf('Lua') == 0) {
+						const imp = `import ${t} from './${t}';`;
+						if (template.indexOf(imp) == -1) template.push(imp);
+					}
+
+					if (isArray) t += "[]";
+					if(isDictionary) t = `Map<${key}, ${t}>`;
+					types[i] = t;
+
+					type = types.join(' | ');
+				}
+
+
+				members.push(`${name}: ${type};\n`);
 			}
 		}
 
-		const template = [
-			`declare class ${m}`,
-			`{`,
-			"\t"+members.join('\n\t'),
-			`}`,
-			``,
-			`export default ${m};`
-		];
-
-		if(n.doc) template.unshift(`/** ${n.doc} **/`);
+		template.sort();
+		template.push(``);
+		if (n.doc) template.push(`/** ${n.doc} **/`);
+		template.push(`declare class ${m}`);
+		template.push(`{`);
+		template.push(`\t` + members.join('\n\t'));
+		template.push(`}\n`);
+		template.push(`export default ${m};`);
 
 		await dir
 			.file(`${m}.d.ts`)
@@ -92,9 +171,10 @@ export async function run() {
 
 	const typesDir = new DirectoryInfo("./types");
 
-	await generateDefineTypes(
-		typesDir.directory("defines"),
+	const defines = generateDefineTypes("defines",
 		await json.read<JsonMap>("./definition/defines.json"));
+
+	typesDir.file("defines.d.ts").write(defines.toTypeScript());
 
 	await generateClassesTypes(
 		typesDir.directory("classes"),

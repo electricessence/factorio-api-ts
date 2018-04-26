@@ -51,4 +51,5 @@ fabric.properties
 .idea/httpRequests
 
 types/*/**/*.d.ts
+types/defines.d.ts
 node_modules
