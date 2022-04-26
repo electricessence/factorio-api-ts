@@ -4,6 +4,7 @@
  */
 
 import * as fs from "fs";
+import { WriteFileOptions } from "fs";
 import {JsonArray, JsonData, JsonMap} from "typescript-dotnet-commonjs/JSON";
 
 export module ENCODING
@@ -35,13 +36,13 @@ export function deleteFile(path:string):Promise<void>
 	});
 }
 
-function readFile(path:string, encoding:string = ENCODING.UTF8):Promise<string>
+function readFile(path:string, encoding:BufferEncoding = ENCODING.UTF8):Promise<string>
 {
 	return new Promise<string>((resolve, reject)=>
 	{
 		fs.readFile(
 			path,
-			encoding,
+			{encoding: encoding},
 			(err, data)=>
 			{
 				if(err) reject(err);
@@ -50,7 +51,7 @@ function readFile(path:string, encoding:string = ENCODING.UTF8):Promise<string>
 	});
 }
 
-function writeFile(path:string, data:string, options?:WriteOptions):Promise<void>
+function writeFile(path:string, data:string, options?:WriteFileOptions):Promise<void>
 {
 	return new Promise<void>((resolve, reject)=>
 	{
@@ -74,18 +75,18 @@ export module json
 	// noinspection JSUnusedLocalSymbols
 	export function read<T extends JsonMap | JsonArray>(
 		path:string,
-		encoding?:string):Promise<T>
+		encoding?:BufferEncoding):Promise<T>
 	// noinspection JSUnusedLocalSymbols
-	export function read(path:string, encoding?:string):Promise<JsonData>
+	export function read(path:string, encoding?:BufferEncoding):Promise<JsonData>
 	export function read<T extends JsonMap | JsonArray>(
 		path:string,
-		encoding:string = ENCODING.UTF8):Promise<T>
+		encoding:BufferEncoding = ENCODING.UTF8):Promise<T>
 	{
 		return readFile(path, encoding)
 			.then(result=>JSON.parse(result));
 	}
 
-	export function write(path:string, data:JsonData, options?:WriteOptions):Promise<void>
+	export function write(path:string, data:JsonData, options?:WriteFileOptions):Promise<void>
 	{
 		return new Promise<string>(
 			resolve=>resolve(JSON.stringify(data, null, 2)))

@@ -65,7 +65,7 @@ export default class DirectoryInfo
 		return getDirectoriesAsync(this.path);
 	}
 
-	file(fileName:string, encoding:string = ENCODING.UTF8):FileInfo
+	file(fileName:string, encoding:BufferEncoding = ENCODING.UTF8):FileInfo
 	{
 		return new FileInfo(path.join(this.path, fileName), encoding);
 	}

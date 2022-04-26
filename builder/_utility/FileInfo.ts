@@ -1,9 +1,10 @@
 import {ENCODING, read, write, deleteFile, WriteOptions} from "./file-promise";
 import * as fs from "fs";
+import { WriteFileOptions } from "fs";
 
 export default class FileInfo
 {
-	constructor(public readonly path:string, public encoding:string = ENCODING.UTF8)
+	constructor(public readonly path:string, public encoding:BufferEncoding = ENCODING.UTF8)
 	{
 
 	}
@@ -23,7 +24,7 @@ export default class FileInfo
 		return read(this.path, this.encoding);
 	}
 
-	write(contents:string, options?:WriteOptions):Promise<void>
+	write(contents:string, options?:WriteFileOptions):Promise<void>
 	{
 		return write(this.path, contents, options);
 	}

@@ -1,10 +1,10 @@
-import {json} from "./_utility/file-promise";
+import { json } from "./_utility/file-promise";
 import DirectoryInfo from "./_utility/DirectoryInfo";
-import {JsonMap} from "typescript-dotnet-commonjs/JSON";
-import {DefinesNode} from "./DefinesNode";
-import {IMap} from "typescript-dotnet-commonjs/IMap";
-import {ClassesNode, ClassMember} from "./ClassesNode";
-import {repeat} from "typescript-dotnet-commonjs/System/Text/Utility";
+import { JsonMap } from "typescript-dotnet-commonjs/JSON";
+import { DefinesNode } from "./DefinesNode";
+import { IMap } from "typescript-dotnet-commonjs/IMap";
+import { ClassesNode, ClassMember } from "./ClassesNode";
+import { repeat } from "typescript-dotnet-commonjs/System/Text/Utility";
 
 abstract class DefinesEntityBase {
 	constructor(public name: string) {
@@ -88,7 +88,7 @@ async function generateClassesTypes(dir: DirectoryInfo, node: JsonMap | IMap<Cla
 		const template: string[] = [];
 
 		for (const c in children) {
-			let {type, name, doc} = children[c];
+			let { type, name, doc } = children[c];
 
 			if (doc) {
 				members.push(`/**`);
@@ -109,10 +109,10 @@ async function generateClassesTypes(dir: DirectoryInfo, node: JsonMap | IMap<Cla
 				for (let i = 0; i < types.length; i++) {
 					let t = types[i];
 					const isDictionary = t.indexOf("dictionary ") == 0;
-					let key:string;
+					let key: string;
 					if (isDictionary) {
 						const arrow = t.indexOf('→');
-						key = t.substring(11, arrow-1);
+						key = t.substring(11, arrow - 1);
 						t = t.substring(arrow + 2);
 					}
 
@@ -135,13 +135,13 @@ async function generateClassesTypes(dir: DirectoryInfo, node: JsonMap | IMap<Cla
 						if (template.indexOf(imp) == -1) template.push(imp)
 					}
 
-					if (t!=m && t.indexOf('Lua') == 0) {
+					if (t != m && t.indexOf('Lua') == 0) {
 						const imp = `import ${t} from './${t}';`;
 						if (template.indexOf(imp) == -1) template.push(imp);
 					}
 
 					if (isArray) t += "[]";
-					if(isDictionary) t = `Map<${key}, ${t}>`;
+					if (isDictionary) t = `Map<${key}, ${t}>`;
 					types[i] = t;
 
 					type = types.join(' | ');
@@ -169,11 +169,12 @@ async function generateClassesTypes(dir: DirectoryInfo, node: JsonMap | IMap<Cla
 
 export async function run() {
 
-	const typesDir = new DirectoryInfo("./types");
 
 	const defines = generateDefineTypes("defines",
 		await json.read<JsonMap>("./definition/defines.json"));
 
+	const typesDir = new DirectoryInfo("./types");
+	if (!typesDir.exists) typesDir.create();
 	typesDir.file("defines.d.ts").write(defines.toTypeScript());
 
 	await generateClassesTypes(
